@@ -275,7 +275,7 @@ export default function App() {
           letterSpacing: 3,
           margin: 0,
           lineHeight: 1,
-          background: `linear-gradient(135deg, #fff 40%, ${ACCENT})`,
+          background: `linear-gradient(135deg, ${ACCENT} 10%, #fff 60%, #a0e0ff)`,
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
         }}>
