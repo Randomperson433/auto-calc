@@ -275,11 +275,11 @@ export default function App() {
           letterSpacing: 3,
           margin: 0,
           lineHeight: 1,
-          background: `linear-gradient(135deg, ${ACCENT} 10%, #fff 60%, #a0e0ff)`,
+          background: `linear-gradient(135deg, #fff 40%, ${ACCENT})`,
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
         }}>
-          AUTO WIN CALC 2026
+          AUTO WIN CALC
         </h1>
         <div style={{ fontSize: 13, color: "#555", marginTop: 8, letterSpacing: 1 }}>
           Auto period win probability · powered by Statbotics + TBA
