@@ -279,7 +279,7 @@ export default function App() {
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
         }}>
-          AUTO WIN CALC
+          AUTO WIN CALC 2026
         </h1>
         <div style={{ fontSize: 13, color: "#555", marginTop: 8, letterSpacing: 1 }}>
           Auto period win probability · powered by Statbotics + TBA
