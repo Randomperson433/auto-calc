@@ -223,13 +223,31 @@ function MatchSimulator({ onLoad }) {
     setEvents([]); setSelectedEvent("");
     setMatches([]); setSelectedMatch("");
     setLoadingEvents(true);
-    const url = selectedDistrict === "__all__"
-      ? `${TBA_BASE}/events/${year}/simple`
-      : `${TBA_BASE}/district/${selectedDistrict}/events/simple`;
-    fetchJSON(url, TBA_H)
-      .then(d => setEvents(d.sort((a, b) => a.name.localeCompare(b.name))))
-      .catch(() => setEvents([]))
-      .finally(() => setLoadingEvents(false));
+    // Always fetch all year events so we can include pre/offseason (types 99, 100)
+    const allPromise = fetchJSON(`${TBA_BASE}/events/${year}/simple`, TBA_H).catch(() => []);
+    const districtPromise = selectedDistrict !== "__all__"
+      ? fetchJSON(`${TBA_BASE}/district/${selectedDistrict}/events/simple`, TBA_H).catch(() => [])
+      : Promise.resolve(null);
+    Promise.all([allPromise, districtPromise]).then(([all, districtEvents]) => {
+      let filtered;
+      if (selectedDistrict === "__all__") {
+        filtered = all;
+      } else {
+        const districtKeys = new Set((districtEvents || []).map(e => e.key));
+        // Include district events + any pre/offseason events from that year
+        filtered = all.filter(e => districtKeys.has(e.key) || e.event_type === 99 || e.event_type === 100);
+      }
+      const TYPE_LABEL = { 99: "[Offseason] ", 100: "[Preseason] " };
+      filtered.sort((a, b) => {
+        // Put preseason first, offseason last, regular events in between by name
+        const oa = a.event_type === 100 ? -1 : a.event_type === 99 ? 1 : 0;
+        const ob = b.event_type === 100 ? -1 : b.event_type === 99 ? 1 : 0;
+        if (oa !== ob) return oa - ob;
+        return a.name.localeCompare(b.name);
+      });
+      // Tag preseason/offseason in display name
+      setEvents(filtered.map(e => ({ ...e, displayName: (TYPE_LABEL[e.event_type] || "") + e.name })));
+    }).finally(() => setLoadingEvents(false));
   }, [year, selectedDistrict]);
 
   // Load matches when event changes
@@ -297,7 +315,7 @@ function MatchSimulator({ onLoad }) {
           <label style={labelStyle}>Event {loadingEvents && <span style={{ color: "#555" }}>loading...</span>}</label>
           <select style={selectStyle} value={selectedEvent} onChange={e => setSelectedEvent(e.target.value)}>
             <option value="">— select an event —</option>
-            {events.map(e => <option key={e.key} value={e.key}>{e.name}</option>)}
+            {events.map(e => <option key={e.key} value={e.key}>{e.displayName || e.name}</option>)}
           </select>
         </div>
 
@@ -336,7 +354,7 @@ function MatchSimulator({ onLoad }) {
                       <div style={{ fontSize: 10, color: color === "red" ? "#ff6b6b" : "#6b9fff", fontFamily: "'DM Mono', monospace", letterSpacing: 1, textTransform: "uppercase" }}>
                         {color} alliance
                       </div>
-                      {won && <div style={{ fontSize: 9, color: c, fontFamily: "'DM Mono', monospace", letterSpacing: 1 }}>AUTO WIN</div>}
+                      {won && <div style={{ fontSize: 9, color: c, fontFamily: "'DM Mono', monospace", letterSpacing: 1 }}>AUTO WINNER</div>}
                     </div>
                     {selectedMatchData.alliances[color].team_keys.map(k => (
                       <div key={k} style={{ fontSize: 14, fontFamily: "'DM Mono', monospace", color: "#ccc", marginBottom: 2 }}>{k.replace("frc", "Team ")}</div>
