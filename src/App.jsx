@@ -51,7 +51,8 @@ function extractAutoScores(matches, team) {
     for (const color of ["red", "blue"]) {
       const keys = m?.alliances?.[color]?.team_keys || [];
       if (keys.includes(`frc${team}`)) {
-        const auto = bd?.[color]?.autoPoints;
+        // 2025 game uses autoPoints, 2026 game uses totalAutoPoints
+        const auto = bd?.[color]?.autoPoints ?? bd?.[color]?.totalAutoPoints;
         if (auto != null) scores.push(auto / 3);
         break;
       }
