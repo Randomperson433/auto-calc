@@ -328,7 +328,7 @@ export default function App() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           {/* Red */}
           <div>
-            <div style={{ fontSize: 11, letterSpacing: 3, color: "#ff6b6b", textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 10, letterSpacing: 1, color: "#ff6b6b", textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 12, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ff4d4d", boxShadow: "0 0 8px #ff4d4d" }} />
               Red Alliance
             </div>
@@ -341,7 +341,7 @@ export default function App() {
 
           {/* Blue */}
           <div>
-            <div style={{ fontSize: 11, letterSpacing: 3, color: "#6b9fff", textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 10, letterSpacing: 1, color: "#6b9fff", textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 12, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#4d7fff", boxShadow: "0 0 8px #4d7fff" }} />
               Blue Alliance
             </div>
@@ -428,7 +428,7 @@ export default function App() {
                   padding: "16px 20px",
                   textAlign: "center",
                 }}>
-                  <div style={{ fontSize: 11, color: "#666", fontFamily: "'DM Mono', monospace", letterSpacing: 1, marginBottom: 6 }}>{label}</div>
+                  <div style={{ fontSize: 10, color: "#666", fontFamily: "'DM Mono', monospace", letterSpacing: 0, marginBottom: 6, whiteSpace: "nowrap" }}>{label}</div>
                   <div style={{ fontSize: 36, fontFamily: "'Bebas Neue', sans-serif", color, letterSpacing: 2, lineHeight: 1, textShadow: `0 0 24px ${glow}` }}>
                     {(pct * 100).toFixed(1)}%
                   </div>
