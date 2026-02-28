@@ -467,9 +467,11 @@ export default function App() {
         )}
       </div>
 
-      <div style={{ marginTop: 32, fontSize: 11, color: "#2a2a2a", fontFamily: "'DM Mono', monospace", letterSpacing: 1 }}>
+      <a href="https://www.team8626.com" target="_blank" rel="noopener noreferrer" style={{ marginTop: 32, fontSize: 11, color: "#2a2a2a", fontFamily: "'DM Mono', monospace", letterSpacing: 1, textDecoration: "none" }}
+        onMouseEnter={e => e.target.style.color = ACCENT}
+        onMouseLeave={e => e.target.style.color = "#2a2a2a"}>
         CYBER SAILORS · FRC 8626 · AUTO CALCULATOR
-      </div>
+      </a>
     </div>
   );
 }
