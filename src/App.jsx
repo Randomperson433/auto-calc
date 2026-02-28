@@ -291,7 +291,7 @@ export default function App() {
         width: "100%",
         maxWidth: 680,
         background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.07)",
+        border: `2px solid ${ACCENT}88`,
         borderRadius: 20,
         padding: "32px 28px",
         backdropFilter: "blur(12px)",
