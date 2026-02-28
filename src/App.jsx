@@ -237,7 +237,7 @@ function MatchSimulator({ onLoad }) {
     if (!selectedEvent) { setMatches([]); setSelectedMatch(""); return; }
     setMatches([]); setSelectedMatch("");
     setLoadingMatches(true);
-    fetchJSON(`${TBA_BASE}/event/${selectedEvent}/matches/simple`, TBA_H)
+    fetchJSON(`${TBA_BASE}/event/${selectedEvent}/matches`, TBA_H)
       .then(d => {
         const sorted = d.sort((a, b) => {
           const order = { qm: 0, ef: 1, qf: 2, sf: 3, f: 4 };
@@ -272,7 +272,7 @@ function MatchSimulator({ onLoad }) {
     <div style={{ width: "100%", maxWidth: 680, marginTop: 20 }}>
       <div style={{ background: "rgba(255,255,255,0.03)", border: `2px solid ${ACCENT}44`, borderRadius: 20, padding: "28px 28px" }}>
         <div style={{ fontSize: 11, letterSpacing: 3, color: ACCENT, textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 20 }}>
-          ⚡ Match Simulator
+          Match Simulator
         </div>
 
         {/* Row 1: Year + District */}
@@ -311,18 +311,47 @@ function MatchSimulator({ onLoad }) {
         </div>
 
         {/* Preview */}
-        {selectedMatchData && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-            {["red", "blue"].map(color => (
-              <div key={color} style={{ background: color === "red" ? "#ff4d4d0a" : "#4d7fff0a", border: `1px solid ${color === "red" ? "#ff4d4d33" : "#4d7fff33"}`, borderRadius: 10, padding: "12px 16px" }}>
-                <div style={{ fontSize: 10, color: color === "red" ? "#ff6b6b" : "#6b9fff", fontFamily: "'DM Mono', monospace", letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>{color} alliance</div>
-                {selectedMatchData.alliances[color].team_keys.map(k => (
-                  <div key={k} style={{ fontSize: 14, fontFamily: "'DM Mono', monospace", color: "#ccc", marginBottom: 2 }}>{k.replace("frc", "Team ")}</div>
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
+        {selectedMatchData && (() => {
+          const bd = selectedMatchData.score_breakdown;
+          const autoRed = bd?.red?.autoPoints ?? bd?.red?.totalAutoPoints ?? null;
+          const autoBlue = bd?.blue?.autoPoints ?? bd?.blue?.totalAutoPoints ?? null;
+          const autoWinner = autoRed != null && autoBlue != null
+            ? (autoRed > autoBlue ? "red" : autoBlue > autoRed ? "blue" : "tie")
+            : null;
+          return (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+              {["red", "blue"].map(color => {
+                const won = autoWinner === color;
+                const c = color === "red" ? "#ff4d4d" : "#4d7fff";
+                const autoScore = color === "red" ? autoRed : autoBlue;
+                return (
+                  <div key={color} style={{
+                    background: won ? `${c}18` : `${c}08`,
+                    border: won ? `2px solid ${c}` : `1px solid ${c}33`,
+                    borderRadius: 10, padding: "12px 16px",
+                    boxShadow: won ? `0 0 18px ${c}55` : "none",
+                    transition: "all 0.3s",
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div style={{ fontSize: 10, color: color === "red" ? "#ff6b6b" : "#6b9fff", fontFamily: "'DM Mono', monospace", letterSpacing: 1, textTransform: "uppercase" }}>
+                        {color} alliance
+                      </div>
+                      {won && <div style={{ fontSize: 9, color: c, fontFamily: "'DM Mono', monospace", letterSpacing: 1 }}>AUTO WIN</div>}
+                    </div>
+                    {selectedMatchData.alliances[color].team_keys.map(k => (
+                      <div key={k} style={{ fontSize: 14, fontFamily: "'DM Mono', monospace", color: "#ccc", marginBottom: 2 }}>{k.replace("frc", "Team ")}</div>
+                    ))}
+                    {autoScore != null && (
+                      <div style={{ fontSize: 11, color: won ? c : "#444", fontFamily: "'DM Mono', monospace", marginTop: 8 }}>
+                        Auto: {autoScore} pts
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {selectedMatchData && (
           <div style={{ marginBottom: 16, fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#444" }}>
