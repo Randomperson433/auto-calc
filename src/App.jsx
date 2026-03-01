@@ -228,24 +228,43 @@ function MatchSimulator({ onLoad }) {
     const districtPromise = selectedDistrict !== "__all__"
       ? fetchJSON(`${TBA_BASE}/district/${selectedDistrict}/events/simple`, TBA_H).catch(() => [])
       : Promise.resolve(null);
+    // District key → state abbreviations in that district
+    const DISTRICT_STATES = {
+      ne: ["MA","ME","NH","VT","RI","CT"],
+      chs: ["VA","MD","DC"],
+      fim: ["MI"],
+      fit: ["TX"],
+      fnc: ["NC"],
+      fma: ["NJ","PA","DE"],
+      fin: ["IN"],
+      isr: ["IL"],
+      pnw: ["OR","WA"],
+      pch: ["GA","AL"],
+      cal: ["CA"],
+      ont: ["ON"],
+    };
+
     Promise.all([allPromise, districtPromise]).then(([all, districtEvents]) => {
       let filtered;
       if (selectedDistrict === "__all__") {
         filtered = all;
       } else {
         const districtKeys = new Set((districtEvents || []).map(e => e.key));
-        // Include district events + any pre/offseason events from that year
-        filtered = all.filter(e => districtKeys.has(e.key) || e.event_type === 99 || e.event_type === 100);
+        // Get state codes for this district (strip year prefix, e.g. "2026ne" -> "ne")
+        const districtCode = selectedDistrict.replace(/^\d+/, "");
+        const states = DISTRICT_STATES[districtCode] || [];
+        filtered = all.filter(e =>
+          districtKeys.has(e.key) ||
+          ((e.event_type === 99 || e.event_type === 100) && states.includes(e.state_prov))
+        );
       }
       const TYPE_LABEL = { 99: "[Offseason] ", 100: "[Preseason] " };
       filtered.sort((a, b) => {
-        // Put preseason first, offseason last, regular events in between by name
         const oa = a.event_type === 100 ? -1 : a.event_type === 99 ? 1 : 0;
         const ob = b.event_type === 100 ? -1 : b.event_type === 99 ? 1 : 0;
         if (oa !== ob) return oa - ob;
         return a.name.localeCompare(b.name);
       });
-      // Tag preseason/offseason in display name
       setEvents(filtered.map(e => ({ ...e, displayName: (TYPE_LABEL[e.event_type] || "") + e.name })));
     }).finally(() => setLoadingEvents(false));
   }, [year, selectedDistrict]);
@@ -354,7 +373,7 @@ function MatchSimulator({ onLoad }) {
                       <div style={{ fontSize: 10, color: color === "red" ? "#ff6b6b" : "#6b9fff", fontFamily: "'DM Mono', monospace", letterSpacing: 1, textTransform: "uppercase" }}>
                         {color} alliance
                       </div>
-                      {won && <div style={{ fontSize: 9, color: c, fontFamily: "'DM Mono', monospace", letterSpacing: 1 }}>AUTO WINNER</div>}
+                      {won && <div style={{ fontSize: 9, color: c, fontFamily: "'DM Mono', monospace", letterSpacing: 1 }}>AUTO WIN</div>}
                     </div>
                     {selectedMatchData.alliances[color].team_keys.map(k => (
                       <div key={k} style={{ fontSize: 14, fontFamily: "'DM Mono', monospace", color: "#ccc", marginBottom: 2 }}>{k.replace("frc", "Team ")}</div>
