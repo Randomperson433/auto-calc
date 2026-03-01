@@ -373,7 +373,7 @@ function MatchSimulator({ onLoad }) {
                       <div style={{ fontSize: 10, color: color === "red" ? "#ff6b6b" : "#6b9fff", fontFamily: "'DM Mono', monospace", letterSpacing: 1, textTransform: "uppercase" }}>
                         {color} alliance
                       </div>
-                      {won && <div style={{ fontSize: 9, color: c, fontFamily: "'DM Mono', monospace", letterSpacing: 1 }}>AUTO WIN</div>}
+                      {won && <div style={{ fontSize: 9, color: c, fontFamily: "'DM Mono', monospace", letterSpacing: 1 }}>AUTO WINNER</div>}
                     </div>
                     {selectedMatchData.alliances[color].team_keys.map(k => (
                       <div key={k} style={{ fontSize: 14, fontFamily: "'DM Mono', monospace", color: "#ccc", marginBottom: 2 }}>{k.replace("frc", "Team ")}</div>
@@ -453,7 +453,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0f", backgroundImage: `radial-gradient(ellipse at 20% 10%, #2a0d2e55 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, #0d1a3a55 0%, transparent 60%)`, fontFamily: "'DM Sans', sans-serif", color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 20px 60px" }}>
+    <div style={{ minHeight: "100vh", background: "#0a0a0f", fontFamily: "'DM Sans', sans-serif", color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 20px 60px" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Bebas+Neue&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -473,7 +473,7 @@ export default function App() {
       </div>
 
       {/* Main card */}
-      <div style={{ width: "100%", maxWidth: 680, background: "rgba(255,255,255,0.03)", border: `2px solid ${ACCENT}88`, borderRadius: 20, padding: "32px 28px", backdropFilter: "blur(12px)", boxShadow: `0 0 60px ${ACCENT_GLOW}, 0 24px 48px #0008` }}>
+      <div style={{ width: "100%", maxWidth: 680, background: "rgba(255,255,255,0.03)", border: `2px solid ${ACCENT}88`, borderRadius: 20, padding: "32px 28px", backdropFilter: "blur(12px)", boxShadow: `0 24px 48px #0008` }}>
 
         {/* Event key */}
         <div style={{ marginBottom: 28 }}>
