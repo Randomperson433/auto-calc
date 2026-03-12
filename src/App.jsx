@@ -411,8 +411,9 @@ function MatchSimulator({ onLoad }) {
         })()}
 
         {selectedMatchData && (
-          <div style={{ marginBottom: 16, fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#444" }}>
-            Match key: <span style={{ color: "#666" }}>{selectedMatch}</span>
+          <div style={{ marginBottom: 16, fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#444", display: "flex", gap: 20 }}>
+            <span>Event key: <span style={{ color: "#666" }}>{selectedEvent}</span></span>
+            <span>Match key: <span style={{ color: "#666" }}>{selectedMatch}</span></span>
           </div>
         )}
 
