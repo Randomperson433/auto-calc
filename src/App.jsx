@@ -386,7 +386,6 @@ function MatchSimulator({ onLoad }) {
                     background: won ? `${c}18` : `${c}08`,
                     border: won ? `2px solid ${c}` : `1px solid ${c}33`,
                     borderRadius: 10, padding: "12px 16px",
-                    boxShadow: won ? `0 0 18px ${c}55` : "none",
                     transition: "all 0.3s",
                   }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -430,7 +429,7 @@ function MatchSimulator({ onLoad }) {
             boxShadow: selectedMatchData ? `0 0 24px ${ACCENT_GLOW}` : "none",
           }}
         >
-          Load Teams into Calculator ↑
+          Load Teams into Calculator
         </button>
       </div>
     </div>
