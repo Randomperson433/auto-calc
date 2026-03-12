@@ -128,7 +128,8 @@ const inputStyle = (active) => ({
   background: "rgba(255,255,255,0.04)",
   border: `1px solid ${active ? ACCENT : ACCENT_GLOW}`,
   borderRadius: 8, color: "#fff", fontSize: 15,
-  fontFamily: "'DM Mono', monospace",
+  // Changed to DM Sans to avoid slashed zero
+  fontFamily: "'DM Sans', sans-serif",
   padding: "10px 14px", width: "100%", outline: "none",
   boxSizing: "border-box",
   boxShadow: active ? `0 0 0 3px ${ACCENT_GLOW}` : "none",
@@ -138,7 +139,7 @@ const inputStyle = (active) => ({
 const selectStyle = {
   background: "#0f0f16", border: `1px solid ${ACCENT_GLOW}`,
   borderRadius: 8, color: "#fff", fontSize: 14,
-  fontFamily: "'DM Mono', monospace", padding: "10px 14px",
+  fontFamily: "'DM Sans', sans-serif", padding: "10px 14px",
   width: "100%", outline: "none", cursor: "pointer",
   appearance: "none", WebkitAppearance: "none",
 };
@@ -159,7 +160,8 @@ function TeamInput({ value, onChange, onEnter, placeholder, color }) {
         background: "rgba(255,255,255,0.04)",
         border: `1px solid ${borderFaint}`,
         borderRadius: 8, color: "#fff", fontSize: 18,
-        fontFamily: "'DM Mono', monospace", fontWeight: 500,
+        // Changed to DM Sans to avoid slashed zero
+        fontFamily: "'DM Sans', sans-serif", fontWeight: 500,
         padding: "10px 14px", width: "100%", outline: "none",
         transition: "border-color 0.2s, box-shadow 0.2s", boxSizing: "border-box",
       }}
@@ -170,21 +172,44 @@ function TeamInput({ value, onChange, onEnter, placeholder, color }) {
 }
 
 function ProbBar({ pRed, pBlue }) {
-  const rPct = (pRed * 100).toFixed(1);
-  const bPct = (pBlue * 100).toFixed(1);
+  const targetR = pRed * 100;
+  const targetB = pBlue * 100;
+  const [dispR, setDispR] = useState(50);
+  const [dispB, setDispB] = useState(50);
+
+  useEffect(() => {
+    setDispR(50); setDispB(50);
+    let start = null;
+    const duration = 900;
+    const ease = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    function step(ts) {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
+      const e = ease(p);
+      setDispR(50 + (targetR - 50) * e);
+      setDispB(50 + (targetB - 50) * e);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    const id = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(id);
+  }, [pRed, pBlue]);
+
+  const rPct = dispR.toFixed(1);
+  const bPct = dispB.toFixed(1);
+
   return (
     <div style={{ width: "100%", marginTop: 8 }}>
       <div style={{ display: "flex", borderRadius: 12, overflow: "hidden", height: 36, boxShadow: "0 2px 16px #0006" }}>
-        <div style={{ width: `${rPct}%`, background: "linear-gradient(90deg, #c23232, #ff4d4d)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "'DM Mono', monospace", transition: "width 0.8s cubic-bezier(.4,0,.2,1)" }}>
-          {rPct > 15 ? `${rPct}%` : ""}
+        <div style={{ width: `${dispR}%`, background: "linear-gradient(90deg, #c23232, #ff4d4d)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "'DM Mono', monospace" }}>
+          {dispR > 15 ? `${rPct}%` : ""}
         </div>
-        <div style={{ width: `${bPct}%`, background: "linear-gradient(90deg, #2244cc, #4d7fff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "'DM Mono', monospace", transition: "width 0.8s cubic-bezier(.4,0,.2,1)" }}>
-          {bPct > 15 ? `${bPct}%` : ""}
+        <div style={{ width: `${dispB}%`, background: "linear-gradient(90deg, #2244cc, #4d7fff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "'DM Mono', monospace" }}>
+          {dispB > 15 ? `${bPct}%` : ""}
         </div>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 12, color: "#aaa", fontFamily: "'DM Mono', monospace" }}>
-        <span style={{ color: "#ff6b6b" }}>RED {rPct}%</span>
-        <span style={{ color: "#6b9fff" }}>BLUE {bPct}%</span>
+        <span style={{ color: "#ff6b6b" }}>RED {(targetR).toFixed(1)}%</span>
+        <span style={{ color: "#6b9fff" }}>BLUE {(targetB).toFixed(1)}%</span>
       </div>
     </div>
   );
@@ -206,7 +231,6 @@ function MatchSimulator({ onLoad }) {
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [loadingMatches, setLoadingMatches] = useState(false);
 
-  // Load districts when year changes
   useEffect(() => {
     setDistricts([]); setSelectedDistrict("__all__");
     setEvents([]); setSelectedEvent("");
@@ -218,17 +242,14 @@ function MatchSimulator({ onLoad }) {
       .finally(() => setLoadingDistricts(false));
   }, [year]);
 
-  // Load events when district or year changes
   useEffect(() => {
     setEvents([]); setSelectedEvent("");
     setMatches([]); setSelectedMatch("");
     setLoadingEvents(true);
-    // Always fetch all year events so we can include pre/offseason (types 99, 100)
     const allPromise = fetchJSON(`${TBA_BASE}/events/${year}/simple`, TBA_H).catch(() => []);
     const districtPromise = selectedDistrict !== "__all__"
       ? fetchJSON(`${TBA_BASE}/district/${selectedDistrict}/events/simple`, TBA_H).catch(() => [])
       : Promise.resolve(null);
-    // District key → state abbreviations in that district
     const DISTRICT_STATES = {
       ne: ["MA","ME","NH","VT","RI","CT"],
       chs: ["VA","MD","DC"],
@@ -250,7 +271,6 @@ function MatchSimulator({ onLoad }) {
         filtered = all;
       } else {
         const districtKeys = new Set((districtEvents || []).map(e => e.key));
-        // Get state codes for this district (strip year prefix, e.g. "2026ne" -> "ne")
         const districtCode = selectedDistrict.replace(/^\d+/, "");
         const states = DISTRICT_STATES[districtCode] || [];
         filtered = all.filter(e =>
@@ -269,7 +289,6 @@ function MatchSimulator({ onLoad }) {
     }).finally(() => setLoadingEvents(false));
   }, [year, selectedDistrict]);
 
-  // Load matches when event changes
   useEffect(() => {
     if (!selectedEvent) { setMatches([]); setSelectedMatch(""); return; }
     setMatches([]); setSelectedMatch("");
@@ -306,8 +325,9 @@ function MatchSimulator({ onLoad }) {
   const labelStyle = { fontSize: 11, letterSpacing: 2, color: ACCENT, textTransform: "uppercase", fontFamily: "'DM Mono', monospace", display: "block", marginBottom: 6 };
 
   return (
+    // Changed border to match the top card: `2px solid ${ACCENT}88`
     <div style={{ width: "100%", maxWidth: 680, marginTop: 20 }}>
-      <div style={{ background: "rgba(255,255,255,0.03)", border: `2px solid ${ACCENT}44`, borderRadius: 20, padding: "28px 28px" }}>
+      <div style={{ background: "rgba(255,255,255,0.03)", border: `2px solid ${ACCENT}88`, borderRadius: 20, padding: "28px 28px" }}>
         <div style={{ fontSize: 11, letterSpacing: 3, color: ACCENT, textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 20 }}>
           Match Simulator
         </div>
@@ -466,7 +486,8 @@ export default function App() {
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: 40 }}>
         <div style={{ fontSize: 11, letterSpacing: 4, color: ACCENT, fontFamily: "'DM Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>Team 8626 · Cyber Sailors</div>
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(42px, 8vw, 72px)", letterSpacing: 3, margin: 0, lineHeight: 1, background: `linear-gradient(135deg, #fff 40%, ${ACCENT})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+        {/* Title: plain white, no gradient */}
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(42px, 8vw, 72px)", letterSpacing: 3, margin: 0, lineHeight: 1, color: "#fff" }}>
           AUTO WIN CALC
         </h1>
         <div style={{ fontSize: 13, color: "#555", marginTop: 8, letterSpacing: 1 }}>Auto period win probability · powered by Statbotics + TBA</div>
