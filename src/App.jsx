@@ -635,7 +635,7 @@ export default function App() {
       <div style={{ textAlign: "center", marginBottom: 40 }}>
         <div style={{ fontSize: 11, letterSpacing: 4, color: ACCENT, fontFamily: "'DM Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>Team 8626 · Cyber Sailors</div>
         <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(42px, 8vw, 72px)", letterSpacing: 3, margin: 0, lineHeight: 1, color: "#fff" }}>
-          AUTO WIN CALC
+          AUTO WIN CALCULATOR
         </h1>
         <div style={{ fontSize: 13, color: "#555", marginTop: 8, letterSpacing: 1 }}>Auto period win probability · powered by Statbotics + TBA</div>
       </div>
