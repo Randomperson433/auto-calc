@@ -123,8 +123,7 @@ async function computeWinProb(redTeams, blueTeams, eventKey, onLog) {
   return { pRed: normCDF(z), pBlue: 1 - normCDF(z), redTotal, blueTotal };
 }
 
-// ── Chamfer box: SVG border + clip-path on inner fill ─────────────────────────
-// c = chamfer size in px, borderColor, borderWidth, bg, children
+// ── Outer chamfer box — angular outer border only ─────────────────────────────
 function ChamferBox({ c = 14, borderColor = ACCENT + "88", borderWidth = 2, bg = "rgba(255,255,255,0.03)", style = {}, children }) {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const ref = (el) => {
@@ -137,20 +136,12 @@ function ChamferBox({ c = 14, borderColor = ACCENT + "88", borderWidth = 2, bg =
   const pts = w && h
     ? `${c},0 ${w - c},0 ${w},${c} ${w},${h - c} ${w - c},${h} ${c},${h} 0,${h - c} 0,${c}`
     : null;
-  const clipId = `chf-${Math.random().toString(36).slice(2, 7)}`;
 
   return (
     <div ref={ref} style={{ position: "relative", ...style }}>
       {pts && (
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none" }}>
-          <defs>
-            <clipPath id={clipId}>
-              <polygon points={pts} />
-            </clipPath>
-          </defs>
-          {/* fill */}
           <polygon points={pts} fill={bg} />
-          {/* border stroke — drawn outside clip so it isn't cut */}
           <polygon points={pts} fill="none" stroke={borderColor} strokeWidth={borderWidth} />
         </svg>
       )}
@@ -161,31 +152,15 @@ function ChamferBox({ c = 14, borderColor = ACCENT + "88", borderWidth = 2, bg =
   );
 }
 
-// smaller chamfer for inputs
+// ── Rounded input ─────────────────────────────────────────────────────────────
 function ChamferInput({ value, onChange, onEnter, placeholder, color }) {
   const borderColor = color === "red" ? "#ff4d4d" : "#4d7fff";
-  const borderFaint = color === "red" ? "#ff4d4d55" : "#4d7fff55";
+  const borderFaint = color === "red" ? "#ff4d4d44" : "#4d7fff44";
   const [focused, setFocused] = useState(false);
   const bc = focused ? borderColor : borderFaint;
-  const c = 5;
-  const [size, setSize] = useState({ w: 0, h: 0 });
-  const ref = (el) => {
-    if (el) {
-      const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width, h: e.contentRect.height }));
-      ro.observe(el);
-    }
-  };
-  const { w, h } = size;
-  const pts = w && h ? `${c},0 ${w - c},0 ${w},${c} ${w},${h - c} ${w - c},${h} ${c},${h} 0,${h - c} 0,${c}` : null;
 
   return (
-    <div ref={ref} style={{ position: "relative", width: "100%", marginBottom: 8 }}>
-      {pts && (
-        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none", zIndex: 1 }}>
-          <polygon points={pts} fill="rgba(255,255,255,0.04)" />
-          <polygon points={pts} fill="none" stroke={bc} strokeWidth={1} />
-        </svg>
-      )}
+    <div style={{ position: "relative", width: "100%", marginBottom: 8 }}>
       <input
         type="text"
         value={value}
@@ -196,135 +171,120 @@ function ChamferInput({ value, onChange, onEnter, placeholder, color }) {
         placeholder={placeholder}
         maxLength={5}
         style={{
-          background: "transparent", border: "none", outline: "none",
-          color: "#fff", fontSize: 18, fontFamily: "'DM Sans', sans-serif",
-          fontWeight: 500, padding: "10px 14px", width: "100%",
-          boxSizing: "border-box", position: "relative", zIndex: 2,
+          background: "rgba(255,255,255,0.04)",
+          border: `1px solid ${bc}`,
+          borderRadius: 8,
+          outline: "none",
+          color: "#fff",
+          fontSize: 18,
+          fontFamily: "'DM Sans', sans-serif",
+          fontWeight: 500,
+          padding: "10px 14px",
+          width: "100%",
+          boxSizing: "border-box",
+          transition: "border-color 0.2s",
         }}
       />
     </div>
   );
 }
 
-function ChamferButton({ onClick, disabled, children, color }) {
-  const [size, setSize] = useState({ w: 0, h: 0 });
-  const ref = (el) => {
-    if (el) {
-      const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width, h: e.contentRect.height }));
-      ro.observe(el);
-    }
-  };
-  const { w, h } = size;
-  const c = 8;
-  const pts = w && h ? `${c},0 ${w - c},0 ${w},${c} ${w},${h - c} ${w - c},${h} ${c},${h} 0,${h - c} 0,${c}` : null;
-  const bg = disabled ? "#1a1a1a" : `linear-gradient(135deg, ${ACCENT_DARK}, ${ACCENT})`;
-  const fillColor = disabled ? "#1a1a1a" : ACCENT;
-
+// ── Rounded button ─────────────────────────────────────────────────────────────
+function ChamferButton({ onClick, disabled, children }) {
   return (
-    <div ref={ref} style={{ position: "relative", width: "100%", marginTop: 4, cursor: disabled ? "not-allowed" : "pointer" }} onClick={disabled ? undefined : onClick}>
-      {pts && (
-        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none" }}>
-          <defs>
-            <linearGradient id="btn-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={disabled ? "#1a1a1a" : ACCENT_DARK} />
-              <stop offset="100%" stopColor={disabled ? "#1a1a1a" : ACCENT} />
-            </linearGradient>
-          </defs>
-          <polygon points={pts} fill={disabled ? "#1a1a1a" : "url(#btn-grad)"} />
-          <polygon points={pts} fill="none" stroke={disabled ? "#333" : ACCENT} strokeWidth={1} />
-        </svg>
-      )}
-      <div style={{
-        position: "relative", zIndex: 1, padding: "13px 0",
-        textAlign: "center", fontFamily: "'DM Mono', monospace",
-        fontSize: 13, fontWeight: 700, letterSpacing: 2,
-        textTransform: "uppercase", color: disabled ? "#333" : "#1a0a1a",
+    <button
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      style={{
+        width: "100%",
+        marginTop: 4,
+        padding: "13px 0",
+        border: disabled ? "1px solid #333" : `1px solid ${ACCENT}`,
+        borderRadius: 8,
+        background: disabled
+          ? "#1a1a1a"
+          : `linear-gradient(135deg, ${ACCENT_DARK}, ${ACCENT})`,
+        color: disabled ? "#333" : "#1a0a1a",
+        fontFamily: "'DM Mono', monospace",
+        fontSize: 13,
+        fontWeight: 700,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        cursor: disabled ? "not-allowed" : "pointer",
         userSelect: "none",
-      }}>
-        {children}
-      </div>
-    </div>
+        transition: "opacity 0.2s",
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
-// ── Chamfer select ─────────────────────────────────────────────────────────────
+// ── Rounded select ─────────────────────────────────────────────────────────────
 function ChamferSelect({ value, onChange, children, disabled }) {
-  const [size, setSize] = useState({ w: 0, h: 0 });
-  const ref = (el) => {
-    if (el) {
-      const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width, h: e.contentRect.height }));
-      ro.observe(el);
-    }
-  };
-  const { w, h } = size;
-  const c = 5;
-  const pts = w && h ? `${c},0 ${w - c},0 ${w},${c} ${w},${h - c} ${w - c},${h} ${c},${h} 0,${h - c} 0,${c}` : null;
   return (
-    <div ref={ref} style={{ position: "relative", width: "100%" }}>
-      {pts && (
-        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none", zIndex: 1 }}>
-          <polygon points={pts} fill="#0f0f16" />
-          <polygon points={pts} fill="none" stroke={ACCENT_GLOW} strokeWidth={1} />
-        </svg>
-      )}
+    <div style={{ position: "relative", width: "100%" }}>
       <select
         value={value}
         onChange={onChange}
         disabled={disabled}
         style={{
-          background: "transparent", border: "none", outline: "none",
-          color: "#fff", fontSize: 14, fontFamily: "'DM Sans', sans-serif",
-          padding: "10px 14px", width: "100%", cursor: disabled ? "not-allowed" : "pointer",
-          appearance: "none", WebkitAppearance: "none",
-          position: "relative", zIndex: 2, boxSizing: "border-box",
+          background: "#0f0f16",
+          border: `1px solid ${ACCENT_GLOW}`,
+          borderRadius: 8,
+          outline: "none",
+          color: "#fff",
+          fontSize: 14,
+          fontFamily: "'DM Sans', sans-serif",
+          padding: "10px 14px",
+          width: "100%",
+          cursor: disabled ? "not-allowed" : "pointer",
+          appearance: "none",
+          WebkitAppearance: "none",
+          boxSizing: "border-box",
         }}
       >
         {children}
       </select>
+      {/* Chevron */}
+      <div style={{
+        position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+        pointerEvents: "none", color: "#666", fontSize: 10,
+      }}>▼</div>
     </div>
   );
 }
 
-// ── Chamfer event input ─────────────────────────────────────────────────────────
+// ── Rounded event key input ───────────────────────────────────────────────────
 function ChamferEventInput({ value, onChange, onEnter, placeholder }) {
   const [focused, setFocused] = useState(false);
-  const [size, setSize] = useState({ w: 0, h: 0 });
-  const ref = (el) => {
-    if (el) {
-      const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width, h: e.contentRect.height }));
-      ro.observe(el);
-    }
-  };
-  const { w, h } = size;
-  const c = 6;
-  const bc = focused ? ACCENT : ACCENT_GLOW;
-  const pts = w && h ? `${c},0 ${w - c},0 ${w},${c} ${w},${h - c} ${w - c},${h} ${c},${h} 0,${h - c} 0,${c}` : null;
   return (
-    <div ref={ref} style={{ position: "relative", width: "100%" }}>
-      {pts && (
-        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none", zIndex: 1 }}>
-          <polygon points={pts} fill="rgba(255,255,255,0.04)" />
-          <polygon points={pts} fill="none" stroke={bc} strokeWidth={focused ? 1.5 : 1} />
-        </svg>
-      )}
-      <input
-        type="text" value={value}
-        onChange={onChange}
-        onKeyDown={e => e.key === "Enter" && onEnter?.()}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        placeholder={placeholder}
-        style={{
-          background: "transparent", border: "none", outline: "none",
-          color: "#fff", fontSize: 15, fontFamily: "'DM Sans', sans-serif",
-          padding: "10px 14px", width: "100%", boxSizing: "border-box",
-          position: "relative", zIndex: 2,
-        }}
-      />
-    </div>
+    <input
+      type="text"
+      value={value}
+      onChange={onChange}
+      onKeyDown={e => e.key === "Enter" && onEnter?.()}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      placeholder={placeholder}
+      style={{
+        background: "rgba(255,255,255,0.04)",
+        border: `1px solid ${focused ? ACCENT : ACCENT_GLOW}`,
+        borderRadius: 8,
+        outline: "none",
+        color: "#fff",
+        fontSize: 15,
+        fontFamily: "'DM Sans', sans-serif",
+        padding: "10px 14px",
+        width: "100%",
+        boxSizing: "border-box",
+        transition: "border-color 0.2s",
+      }}
+    />
   );
 }
 
+// ── Probability bar — outer SVG chamfer, inner bar rounded ────────────────────
 function ProbBar({ pRed, pBlue }) {
   const targetR = pRed * 100;
   const targetB = pBlue * 100;
@@ -348,22 +308,26 @@ function ProbBar({ pRed, pBlue }) {
     return () => cancelAnimationFrame(id);
   }, [pRed, pBlue]);
 
-  // Chamfered prob bar using SVG
-  const [size, setSize] = useState({ w: 0, h: 36 });
+  const [size, setSize] = useState({ w: 0 });
   const barRef = (el) => {
     if (el) {
-      const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width, h: 36 }));
+      const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width }));
       ro.observe(el);
     }
   };
-  const { w, h } = size;
-  const c = 7;
+  const { w } = size;
+  const h = 36;
+  const r = 8; // corner radius for outer SVG shape
+  const c = 7; // chamfer size for the SVG clip
+
+  // Outer path: chamfered polygon for the border
+  const pts = w ? `${c},0 ${w - c},0 ${w},${c} ${w},${h - c} ${w - c},${h} ${c},${h} 0,${h - c} 0,${c}` : null;
   const rW = w * (dispR / 100);
   const bW = w * (dispB / 100);
 
   return (
     <div style={{ width: "100%", marginTop: 8 }}>
-      <div ref={barRef} style={{ height: 36, position: "relative" }}>
+      <div ref={barRef} style={{ height: h, position: "relative" }}>
         {w > 0 && (
           <svg width={w} height={h} style={{ display: "block" }}>
             <defs>
@@ -375,17 +339,24 @@ function ProbBar({ pRed, pBlue }) {
                 <stop offset="0%" stopColor="#2244cc" />
                 <stop offset="100%" stopColor="#4d7fff" />
               </linearGradient>
+              {/* Chamfered clip for inner bars */}
               <clipPath id="bar-clip">
-                <polygon points={`${c},0 ${w - c},0 ${w},${c} ${w},${h - c} ${w - c},${h} ${c},${h} 0,${h - c} 0,${c}`} />
+                <polygon points={pts} />
               </clipPath>
             </defs>
+            {/* Background */}
+            <polygon points={pts} fill="#0a0a0f" />
+            {/* Colored bars, clipped to chamfer shape */}
             <g clipPath="url(#bar-clip)">
               <rect x={0} y={0} width={rW} height={h} fill="url(#red-grad)" />
               <rect x={rW} y={0} width={bW} height={h} fill="url(#blue-grad)" />
             </g>
+            {/* Chamfered outer border */}
             <polygon
-              points={`${c},0 ${w - c},0 ${w},${c} ${w},${h - c} ${w - c},${h} ${c},${h} 0,${h - c} 0,${c}`}
-              fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1}
+              points={pts}
+              fill="none"
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth={1.5}
             />
             {rW > 60 && (
               <text x={rW / 2} y={h / 2 + 5} textAnchor="middle" fill="#fff" fontSize={13} fontWeight={700} fontFamily="DM Mono, monospace">
@@ -505,7 +476,10 @@ function MatchSimulator({ onLoad }) {
     onLoad({ red, blue, eventKey: selectedEvent, matchKey: selectedMatch });
   }
 
-  const labelStyle = { fontSize: 11, letterSpacing: 2, color: ACCENT, textTransform: "uppercase", fontFamily: "'DM Mono', monospace", display: "block", marginBottom: 6 };
+  const labelStyle = {
+    fontSize: 11, letterSpacing: 2, color: ACCENT, textTransform: "uppercase",
+    fontFamily: "'DM Mono', monospace", display: "block", marginBottom: 6,
+  };
 
   return (
     <div style={{ width: "100%", maxWidth: 680, marginTop: 20 }}>
@@ -562,7 +536,9 @@ function MatchSimulator({ onLoad }) {
                   <div key={color} style={{
                     background: won ? `${c}18` : `${c}08`,
                     border: won ? `2px solid ${c}` : `1px solid ${c}33`,
-                    borderRadius: 10, padding: "12px 16px", transition: "all 0.3s",
+                    borderRadius: 10,
+                    padding: "12px 16px",
+                    transition: "all 0.3s",
                   }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                       <div style={{ fontSize: 10, color: color === "red" ? "#ff6b6b" : "#6b9fff", fontFamily: "'DM Mono', monospace", letterSpacing: 1, textTransform: "uppercase" }}>
@@ -634,10 +610,18 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const labelStyle = { fontSize: 11, letterSpacing: 2, color: ACCENT, textTransform: "uppercase", fontFamily: "'DM Mono', monospace", display: "block", marginBottom: 8 };
+  const labelStyle = {
+    fontSize: 11, letterSpacing: 2, color: ACCENT, textTransform: "uppercase",
+    fontFamily: "'DM Mono', monospace", display: "block", marginBottom: 8,
+  };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0f", fontFamily: "'DM Sans', sans-serif", color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 20px 60px" }}>
+    <div style={{
+      minHeight: "100vh", background: "#0a0a0f",
+      fontFamily: "'DM Sans', sans-serif", color: "#fff",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      padding: "40px 20px 60px",
+    }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Bebas+Neue&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -689,17 +673,31 @@ export default function App() {
             </div>
           </div>
 
-          <ChamferButton onClick={compute} disabled={!canCompute || loading} style={{ marginTop: 28 }}>
+          <ChamferButton onClick={compute} disabled={!canCompute || loading}>
             {loading ? "Computing..." : "Calculate Auto Win Prob"}
           </ChamferButton>
 
           {loading && logs.length > 0 && (
-            <div style={{ marginTop: 16, background: "#0a0a0a", padding: "12px 14px", fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#666", maxHeight: 120, overflowY: "auto" }}>
+            <div style={{
+              marginTop: 16, background: "#0a0a0a", padding: "12px 14px",
+              fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#666",
+              maxHeight: 120, overflowY: "auto", borderRadius: 6,
+              border: "1px solid #1a1a1a",
+            }}>
               {logs.map((l, i) => <div key={i} style={{ color: i === logs.length - 1 ? ACCENT : "#555" }}>› {l}</div>)}
             </div>
           )}
 
-          {error && <div style={{ marginTop: 16, padding: "12px 16px", background: "#ff4d4d11", border: "1px solid #ff4d4d33", color: "#ff8080", fontSize: 13, fontFamily: "'DM Mono', monospace" }}>{error}</div>}
+          {error && (
+            <div style={{
+              marginTop: 16, padding: "12px 16px",
+              background: "#ff4d4d11", border: "1px solid #ff4d4d33",
+              borderRadius: 8, color: "#ff8080", fontSize: 13,
+              fontFamily: "'DM Mono', monospace",
+            }}>
+              {error}
+            </div>
+          )}
 
           {result && !loading && (
             <div style={{ marginTop: 24 }}>
@@ -711,18 +709,36 @@ export default function App() {
                   { label: "Red Auto Win", pct: result.pRed, total: result.redTotal, color: "#ff4d4d" },
                   { label: "Blue Auto Win", pct: result.pBlue, total: result.blueTotal, color: "#4d7fff" },
                 ].map(({ label, pct, total, color }) => (
-                  <div key={label} style={{ background: `${color}08`, border: `1px solid ${color}22`, padding: "16px 20px", textAlign: "center" }}>
+                  <div key={label} style={{
+                    background: `${color}08`,
+                    border: `1px solid ${color}22`,
+                    borderRadius: 10,
+                    padding: "16px 20px",
+                    textAlign: "center",
+                  }}>
                     <div style={{ fontSize: 10, color: "#666", fontFamily: "'DM Mono', monospace", marginBottom: 6, whiteSpace: "nowrap" }}>{label}</div>
                     <div style={{ fontSize: 36, fontFamily: "'Bebas Neue', sans-serif", color, letterSpacing: 2, lineHeight: 1 }}>{(pct * 100).toFixed(1)}%</div>
                     <div style={{ fontSize: 11, color: "#555", fontFamily: "'DM Mono', monospace", marginTop: 6 }}>EPA: {total.toFixed(2)} pts</div>
                   </div>
                 ))}
               </div>
-              <button onClick={() => setShowLogs(s => !s)} style={{ marginTop: 16, background: "none", border: "none", color: "#444", fontSize: 11, fontFamily: "'DM Mono', monospace", cursor: "pointer", letterSpacing: 1 }}>
+              <button
+                onClick={() => setShowLogs(s => !s)}
+                style={{
+                  marginTop: 16, background: "none", border: "none",
+                  color: "#444", fontSize: 11, fontFamily: "'DM Mono', monospace",
+                  cursor: "pointer", letterSpacing: 1,
+                }}
+              >
                 {showLogs ? "▲ hide details" : "▼ show details"}
               </button>
               {showLogs && (
-                <div style={{ marginTop: 8, background: "#0a0a0a", padding: "12px 14px", fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#555", maxHeight: 200, overflowY: "auto" }}>
+                <div style={{
+                  marginTop: 8, background: "#0a0a0a", padding: "12px 14px",
+                  fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#555",
+                  maxHeight: 200, overflowY: "auto", borderRadius: 6,
+                  border: "1px solid #1a1a1a",
+                }}>
                   {logs.map((l, i) => <div key={i}>› {l}</div>)}
                 </div>
               )}
@@ -733,10 +749,14 @@ export default function App() {
 
       <MatchSimulator onLoad={handleSimLoad} />
 
-      <a href="https://www.team8626.com" target="_blank" rel="noopener noreferrer"
+      <a
+        href="https://www.team8626.com"
+        target="_blank"
+        rel="noopener noreferrer"
         style={{ marginTop: 32, fontSize: 11, color: "#2a2a2a", fontFamily: "'DM Mono', monospace", letterSpacing: 1, textDecoration: "none" }}
         onMouseEnter={e => e.target.style.color = ACCENT}
-        onMouseLeave={e => e.target.style.color = "#2a2a2a"}>
+        onMouseLeave={e => e.target.style.color = "#2a2a2a"}
+      >
         CYBER SAILORS · FRC 8626 · AUTO CALCULATOR
       </a>
     </div>
