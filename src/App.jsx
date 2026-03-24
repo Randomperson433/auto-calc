@@ -309,7 +309,7 @@ function MatchSimulator({ onLoad }) {
     <div style={{ width: "100%", maxWidth: 680, marginTop: 20 }}>
       <div style={{ background: "rgba(255,255,255,0.03)", border: `2px solid ${ACCENT}44`, borderRadius: 20, padding: "28px 28px" }}>
         <div style={{ fontSize: 11, letterSpacing: 3, color: ACCENT, textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 20 }}>
-          ⚡ Match Simulator
+          Match Simulator
         </div>
 
         {/* Row 1: Year + District */}
@@ -373,7 +373,7 @@ function MatchSimulator({ onLoad }) {
                       <div style={{ fontSize: 10, color: color === "red" ? "#ff6b6b" : "#6b9fff", fontFamily: "'DM Mono', monospace", letterSpacing: 1, textTransform: "uppercase" }}>
                         {color} alliance
                       </div>
-                      {won && <div style={{ fontSize: 9, color: c, fontFamily: "'DM Mono', monospace", letterSpacing: 1 }}>AUTO WIN ★</div>}
+                      {won && <div style={{ fontSize: 9, color: c, fontFamily: "'DM Mono', monospace", letterSpacing: 1 }}>AUTO WINNER</div>}
                     </div>
                     {selectedMatchData.alliances[color].team_keys.map(k => (
                       <div key={k} style={{ fontSize: 14, fontFamily: "'DM Mono', monospace", color: "#ccc", marginBottom: 2 }}>{k.replace("frc", "Team ")}</div>
@@ -409,7 +409,7 @@ function MatchSimulator({ onLoad }) {
             boxShadow: selectedMatchData ? `0 0 24px ${ACCENT_GLOW}` : "none",
           }}
         >
-          Load Teams into Calculator ↑
+          Load Teams into Calculator
         </button>
       </div>
     </div>
@@ -495,7 +495,7 @@ export default function App() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           <div>
             <div style={{ fontSize: 10, letterSpacing: 1, color: "#ff6b6b", textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 12, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-              <img src="/logo.png" style={{ width: 18, height: 15, objectFit: "contain", filter: "invert(1) sepia(1) saturate(5) hue-rotate(310deg) brightness(1.2)", opacity: 0.9 }} alt="" /> Red Alliance
+              <img src="/logo_red.png" style={{ width: 22, height: 18, objectFit: "contain" }} alt="" /> Red Alliance
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {red.map((v, i) => <TeamInput key={i} value={v} onChange={val => updateRed(i, val)} onEnter={compute} placeholder={`Team ${i + 1}`} color="red" />)}
@@ -503,7 +503,7 @@ export default function App() {
           </div>
           <div>
             <div style={{ fontSize: 10, letterSpacing: 1, color: "#6b9fff", textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 12, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-              <img src="/logo.png" style={{ width: 18, height: 15, objectFit: "contain", filter: "invert(1) sepia(1) saturate(5) hue-rotate(190deg) brightness(1.2)", opacity: 0.9 }} alt="" /> Blue Alliance
+              <img src="/logo_blue.png" style={{ width: 22, height: 18, objectFit: "contain" }} alt="" /> Blue Alliance
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {blue.map((v, i) => <TeamInput key={i} value={v} onChange={val => updateBlue(i, val)} onEnter={compute} placeholder={`Team ${i + 1}`} color="blue" />)}
