@@ -123,68 +123,257 @@ async function computeWinProb(redTeams, blueTeams, eventKey, onLog) {
   return { pRed: normCDF(z), pBlue: 1 - normCDF(z), redTotal, blueTotal };
 }
 
-// ── shared styles ──────────────────────────────────────────────────────────────
-const inputStyle = (active) => ({
-  background: "rgba(255,255,255,0.04)",
-  border: `1px solid ${active ? ACCENT : ACCENT_GLOW}`,
-  borderRadius: 8, color: "#fff", fontSize: 15,
-  fontFamily: "'DM Mono', monospace",
-  padding: "10px 14px", width: "100%", outline: "none",
-  boxSizing: "border-box",
-  boxShadow: active ? `0 0 0 3px ${ACCENT_GLOW}` : "none",
-  transition: "border-color 0.2s, box-shadow 0.2s",
-});
+// ── Outer chamfer box — angular outer border only ─────────────────────────────
+function ChamferBox({ c = 14, borderColor = ACCENT + "88", borderWidth = 2, bg = "rgba(255,255,255,0.03)", style = {}, children }) {
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const ref = (el) => {
+    if (el) {
+      const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width, h: e.contentRect.height }));
+      ro.observe(el);
+    }
+  };
+  const { w, h } = size;
+  const pts = w && h
+    ? `${c},0 ${w - c},0 ${w},${c} ${w},${h - c} ${w - c},${h} ${c},${h} 0,${h - c} 0,${c}`
+    : null;
 
-const selectStyle = {
-  background: "#0f0f16", border: `1px solid ${ACCENT_GLOW}`,
-  borderRadius: 8, color: "#fff", fontSize: 14,
-  fontFamily: "'DM Mono', monospace", padding: "10px 14px",
-  width: "100%", outline: "none", cursor: "pointer",
-  appearance: "none", WebkitAppearance: "none",
-};
+  return (
+    <div ref={ref} style={{ position: "relative", ...style }}>
+      {pts && (
+        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none" }}>
+          <polygon points={pts} fill={bg} />
+          <polygon points={pts} fill="none" stroke={borderColor} strokeWidth={borderWidth} />
+        </svg>
+      )}
+      <div style={{ position: "relative", zIndex: 1, padding: "32px 28px" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
-function TeamInput({ value, onChange, onEnter, placeholder, color }) {
+// ── Rounded input ─────────────────────────────────────────────────────────────
+function ChamferInput({ value, onChange, onEnter, placeholder, color }) {
   const borderColor = color === "red" ? "#ff4d4d" : "#4d7fff";
   const borderFaint = color === "red" ? "#ff4d4d44" : "#4d7fff44";
-  const glowColor = color === "red" ? "#ff4d4d22" : "#4d7fff22";
+  const [focused, setFocused] = useState(false);
+  const bc = focused ? borderColor : borderFaint;
+
+  return (
+    <div style={{ position: "relative", width: "100%", marginBottom: 8 }}>
+      <input
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value.replace(/\D/g, "").slice(0, 5))}
+        onKeyDown={e => e.key === "Enter" && onEnter?.()}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder={placeholder}
+        maxLength={5}
+        style={{
+          background: "rgba(255,255,255,0.04)",
+          border: `1px solid ${bc}`,
+          borderRadius: 8,
+          outline: "none",
+          color: "#fff",
+          fontSize: 18,
+          fontFamily: "'DM Sans', sans-serif",
+          fontWeight: 500,
+          padding: "10px 14px",
+          width: "100%",
+          boxSizing: "border-box",
+          transition: "border-color 0.2s",
+        }}
+      />
+    </div>
+  );
+}
+
+// ── Rounded button ─────────────────────────────────────────────────────────────
+function ChamferButton({ onClick, disabled, children }) {
+  return (
+    <button
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      style={{
+        width: "100%",
+        marginTop: 4,
+        padding: "13px 0",
+        border: disabled ? "1px solid #333" : `1px solid ${ACCENT}`,
+        borderRadius: 8,
+        background: disabled
+          ? "#1a1a1a"
+          : `linear-gradient(135deg, ${ACCENT_DARK}, ${ACCENT})`,
+        color: disabled ? "#333" : "#1a0a1a",
+        fontFamily: "'DM Mono', monospace",
+        fontSize: 13,
+        fontWeight: 700,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        cursor: disabled ? "not-allowed" : "pointer",
+        userSelect: "none",
+        transition: "opacity 0.2s",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ── Rounded select ─────────────────────────────────────────────────────────────
+function ChamferSelect({ value, onChange, children, disabled }) {
+  return (
+    <div style={{ position: "relative", width: "100%" }}>
+      <select
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        style={{
+          background: "#0f0f16",
+          border: `1px solid ${ACCENT_GLOW}`,
+          borderRadius: 8,
+          outline: "none",
+          color: "#fff",
+          fontSize: 14,
+          fontFamily: "'DM Sans', sans-serif",
+          padding: "10px 14px",
+          width: "100%",
+          cursor: disabled ? "not-allowed" : "pointer",
+          appearance: "none",
+          WebkitAppearance: "none",
+          boxSizing: "border-box",
+        }}
+      >
+        {children}
+      </select>
+      {/* Chevron */}
+      <div style={{
+        position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+        pointerEvents: "none", color: "#666", fontSize: 10,
+      }}>▼</div>
+    </div>
+  );
+}
+
+// ── Rounded event key input ───────────────────────────────────────────────────
+function ChamferEventInput({ value, onChange, onEnter, placeholder }) {
+  const [focused, setFocused] = useState(false);
   return (
     <input
       type="text"
       value={value}
-      onChange={e => onChange(e.target.value.replace(/\D/g, "").slice(0, 5))}
+      onChange={onChange}
       onKeyDown={e => e.key === "Enter" && onEnter?.()}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
       placeholder={placeholder}
-      maxLength={5}
       style={{
         background: "rgba(255,255,255,0.04)",
-        border: `1px solid ${borderFaint}`,
-        borderRadius: 8, color: "#fff", fontSize: 18,
-        fontFamily: "'DM Mono', monospace", fontWeight: 500,
-        padding: "10px 14px", width: "100%", outline: "none",
-        transition: "border-color 0.2s, box-shadow 0.2s", boxSizing: "border-box",
+        border: `1px solid ${focused ? ACCENT : ACCENT_GLOW}`,
+        borderRadius: 8,
+        outline: "none",
+        color: "#fff",
+        fontSize: 15,
+        fontFamily: "'DM Sans', sans-serif",
+        padding: "10px 14px",
+        width: "100%",
+        boxSizing: "border-box",
+        transition: "border-color 0.2s",
       }}
-      onFocus={e => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = `0 0 0 3px ${glowColor}`; }}
-      onBlur={e => { e.target.style.borderColor = borderFaint; e.target.style.boxShadow = "none"; }}
     />
   );
 }
 
+// ── Probability bar — outer SVG chamfer, inner bar rounded ────────────────────
 function ProbBar({ pRed, pBlue }) {
-  const rPct = (pRed * 100).toFixed(1);
-  const bPct = (pBlue * 100).toFixed(1);
+  const targetR = pRed * 100;
+  const targetB = pBlue * 100;
+  const [dispR, setDispR] = useState(50);
+  const [dispB, setDispB] = useState(50);
+
+  useEffect(() => {
+    setDispR(50); setDispB(50);
+    let start = null;
+    const duration = 900;
+    const ease = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    function step(ts) {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
+      const e = ease(p);
+      setDispR(50 + (targetR - 50) * e);
+      setDispB(50 + (targetB - 50) * e);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    const id = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(id);
+  }, [pRed, pBlue]);
+
+  const [size, setSize] = useState({ w: 0 });
+  const barRef = (el) => {
+    if (el) {
+      const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width }));
+      ro.observe(el);
+    }
+  };
+  const { w } = size;
+  const h = 36;
+  const r = 8; // corner radius for outer SVG shape
+  const c = 7; // chamfer size for the SVG clip
+
+  // Outer path: chamfered polygon for the border
+  const pts = w ? `${c},0 ${w - c},0 ${w},${c} ${w},${h - c} ${w - c},${h} ${c},${h} 0,${h - c} 0,${c}` : null;
+  const rW = w * (dispR / 100);
+  const bW = w * (dispB / 100);
+
   return (
     <div style={{ width: "100%", marginTop: 8 }}>
-      <div style={{ display: "flex", borderRadius: 12, overflow: "hidden", height: 36, boxShadow: "0 2px 16px #0006" }}>
-        <div style={{ width: `${rPct}%`, background: "linear-gradient(90deg, #c23232, #ff4d4d)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "'DM Mono', monospace", transition: "width 0.8s cubic-bezier(.4,0,.2,1)" }}>
-          {rPct > 15 ? `${rPct}%` : ""}
-        </div>
-        <div style={{ width: `${bPct}%`, background: "linear-gradient(90deg, #2244cc, #4d7fff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "'DM Mono', monospace", transition: "width 0.8s cubic-bezier(.4,0,.2,1)" }}>
-          {bPct > 15 ? `${bPct}%` : ""}
-        </div>
+      <div ref={barRef} style={{ height: h, position: "relative" }}>
+        {w > 0 && (
+          <svg width={w} height={h} style={{ display: "block" }}>
+            <defs>
+              <linearGradient id="red-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#c23232" />
+                <stop offset="100%" stopColor="#ff4d4d" />
+              </linearGradient>
+              <linearGradient id="blue-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#2244cc" />
+                <stop offset="100%" stopColor="#4d7fff" />
+              </linearGradient>
+              {/* Chamfered clip for inner bars */}
+              <clipPath id="bar-clip">
+                <polygon points={pts} />
+              </clipPath>
+            </defs>
+            {/* Background */}
+            <polygon points={pts} fill="#0a0a0f" />
+            {/* Colored bars, clipped to chamfer shape */}
+            <g clipPath="url(#bar-clip)">
+              <rect x={0} y={0} width={rW} height={h} fill="url(#red-grad)" />
+              <rect x={rW} y={0} width={bW} height={h} fill="url(#blue-grad)" />
+            </g>
+            {/* Chamfered outer border */}
+            <polygon
+              points={pts}
+              fill="none"
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth={1.5}
+            />
+            {rW > 60 && (
+              <text x={rW / 2} y={h / 2 + 5} textAnchor="middle" fill="#fff" fontSize={13} fontWeight={700} fontFamily="DM Mono, monospace">
+                {dispR.toFixed(1)}%
+              </text>
+            )}
+            {bW > 60 && (
+              <text x={rW + bW / 2} y={h / 2 + 5} textAnchor="middle" fill="#fff" fontSize={13} fontWeight={700} fontFamily="DM Mono, monospace">
+                {dispB.toFixed(1)}%
+              </text>
+            )}
+          </svg>
+        )}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 12, color: "#aaa", fontFamily: "'DM Mono', monospace" }}>
-        <span style={{ color: "#ff6b6b" }}>RED {rPct}%</span>
-        <span style={{ color: "#6b9fff" }}>BLUE {bPct}%</span>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 12, fontFamily: "'DM Mono', monospace" }}>
+        <span style={{ color: "#ff6b6b" }}>RED {targetR.toFixed(1)}%</span>
+        <span style={{ color: "#6b9fff" }}>BLUE {targetB.toFixed(1)}%</span>
       </div>
     </div>
   );
@@ -206,7 +395,6 @@ function MatchSimulator({ onLoad }) {
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [loadingMatches, setLoadingMatches] = useState(false);
 
-  // Load districts when year changes
   useEffect(() => {
     setDistricts([]); setSelectedDistrict("__all__");
     setEvents([]); setSelectedEvent("");
@@ -218,39 +406,25 @@ function MatchSimulator({ onLoad }) {
       .finally(() => setLoadingDistricts(false));
   }, [year]);
 
-  // Load events when district or year changes
   useEffect(() => {
     setEvents([]); setSelectedEvent("");
     setMatches([]); setSelectedMatch("");
     setLoadingEvents(true);
-    // Always fetch all year events so we can include pre/offseason (types 99, 100)
     const allPromise = fetchJSON(`${TBA_BASE}/events/${year}/simple`, TBA_H).catch(() => []);
     const districtPromise = selectedDistrict !== "__all__"
       ? fetchJSON(`${TBA_BASE}/district/${selectedDistrict}/events/simple`, TBA_H).catch(() => [])
       : Promise.resolve(null);
-    // District key → state abbreviations in that district
     const DISTRICT_STATES = {
-      ne: ["MA","ME","NH","VT","RI","CT"],
-      chs: ["VA","MD","DC"],
-      fim: ["MI"],
-      fit: ["TX"],
-      fnc: ["NC"],
-      fma: ["NJ","PA","DE"],
-      fin: ["IN"],
-      isr: ["IL"],
-      pnw: ["OR","WA"],
-      pch: ["GA","AL"],
-      cal: ["CA"],
-      ont: ["ON"],
+      ne: ["MA","ME","NH","VT","RI","CT"], chs: ["VA","MD","DC"], fim: ["MI"],
+      fit: ["TX"], fnc: ["NC"], fma: ["NJ","PA","DE"], fin: ["IN"], isr: ["IL"],
+      pnw: ["OR","WA"], pch: ["GA","AL"], cal: ["CA"], ont: ["ON"],
     };
-
     Promise.all([allPromise, districtPromise]).then(([all, districtEvents]) => {
       let filtered;
       if (selectedDistrict === "__all__") {
         filtered = all;
       } else {
         const districtKeys = new Set((districtEvents || []).map(e => e.key));
-        // Get state codes for this district (strip year prefix, e.g. "2026ne" -> "ne")
         const districtCode = selectedDistrict.replace(/^\d+/, "");
         const states = DISTRICT_STATES[districtCode] || [];
         filtered = all.filter(e =>
@@ -269,7 +443,6 @@ function MatchSimulator({ onLoad }) {
     }).finally(() => setLoadingEvents(false));
   }, [year, selectedDistrict]);
 
-  // Load matches when event changes
   useEffect(() => {
     if (!selectedEvent) { setMatches([]); setSelectedMatch(""); return; }
     setMatches([]); setSelectedMatch("");
@@ -303,58 +476,56 @@ function MatchSimulator({ onLoad }) {
     onLoad({ red, blue, eventKey: selectedEvent, matchKey: selectedMatch });
   }
 
-  const labelStyle = { fontSize: 11, letterSpacing: 2, color: ACCENT, textTransform: "uppercase", fontFamily: "'DM Mono', monospace", display: "block", marginBottom: 6 };
+  const labelStyle = {
+    fontSize: 11, letterSpacing: 2, color: ACCENT, textTransform: "uppercase",
+    fontFamily: "'DM Mono', monospace", display: "block", marginBottom: 6,
+  };
 
   return (
     <div style={{ width: "100%", maxWidth: 680, marginTop: 20 }}>
-      <div style={{ background: "rgba(255,255,255,0.03)", border: `2px solid ${ACCENT}44`, borderRadius: 20, padding: "28px 28px" }}>
+      <ChamferBox c={14} borderColor={ACCENT + "88"} borderWidth={2} bg="rgba(255,255,255,0.03)" style={{ width: "100%" }}>
         <div style={{ fontSize: 11, letterSpacing: 3, color: ACCENT, textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 20 }}>
           Match Simulator
         </div>
 
-        {/* Row 1: Year + District */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12, marginBottom: 12 }}>
           <div>
             <label style={labelStyle}>Year</label>
-            <select style={selectStyle} value={year} onChange={e => setYear(Number(e.target.value))}>
+            <ChamferSelect value={year} onChange={e => setYear(Number(e.target.value))}>
               {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
+            </ChamferSelect>
           </div>
           <div>
             <label style={labelStyle}>District {loadingDistricts && <span style={{ color: "#555" }}>loading...</span>}</label>
-            <select style={selectStyle} value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)}>
+            <ChamferSelect value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)}>
               <option value="__all__">All Events</option>
               {districts.map(d => <option key={d.key} value={d.key}>{d.display_name}</option>)}
-            </select>
+            </ChamferSelect>
           </div>
         </div>
 
-        {/* Row 2: Event */}
         <div style={{ marginBottom: 12 }}>
           <label style={labelStyle}>Event {loadingEvents && <span style={{ color: "#555" }}>loading...</span>}</label>
-          <select style={selectStyle} value={selectedEvent} onChange={e => setSelectedEvent(e.target.value)}>
+          <ChamferSelect value={selectedEvent} onChange={e => setSelectedEvent(e.target.value)}>
             <option value="">— select an event —</option>
             {events.map(e => <option key={e.key} value={e.key}>{e.displayName || e.name}</option>)}
-          </select>
+          </ChamferSelect>
         </div>
 
-        {/* Row 3: Match */}
         <div style={{ marginBottom: 20 }}>
           <label style={labelStyle}>Match {loadingMatches && <span style={{ color: "#555" }}>loading...</span>}</label>
-          <select style={selectStyle} value={selectedMatch} onChange={e => setSelectedMatch(e.target.value)} disabled={!matches.length}>
+          <ChamferSelect value={selectedMatch} onChange={e => setSelectedMatch(e.target.value)} disabled={!matches.length}>
             <option value="">— select a match —</option>
             {matches.map(m => <option key={m.key} value={m.key}>{matchLabel(m)}</option>)}
-          </select>
+          </ChamferSelect>
         </div>
 
-        {/* Preview */}
         {selectedMatchData && (() => {
           const bd = selectedMatchData.score_breakdown;
           const autoRed = bd?.red?.autoPoints ?? bd?.red?.totalAutoPoints ?? null;
           const autoBlue = bd?.blue?.autoPoints ?? bd?.blue?.totalAutoPoints ?? null;
           const autoWinner = autoRed != null && autoBlue != null
-            ? (autoRed > autoBlue ? "red" : autoBlue > autoRed ? "blue" : "tie")
-            : null;
+            ? (autoRed > autoBlue ? "red" : autoBlue > autoRed ? "blue" : "tie") : null;
           return (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
               {["red", "blue"].map(color => {
@@ -365,8 +536,8 @@ function MatchSimulator({ onLoad }) {
                   <div key={color} style={{
                     background: won ? `${c}18` : `${c}08`,
                     border: won ? `2px solid ${c}` : `1px solid ${c}33`,
-                    borderRadius: 10, padding: "12px 16px",
-                    boxShadow: won ? `0 0 18px ${c}55` : "none",
+                    borderRadius: 10,
+                    padding: "12px 16px",
                     transition: "all 0.3s",
                   }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -391,27 +562,16 @@ function MatchSimulator({ onLoad }) {
         })()}
 
         {selectedMatchData && (
-          <div style={{ marginBottom: 16, fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#444" }}>
-            Match key: <span style={{ color: "#666" }}>{selectedMatch}</span>
+          <div style={{ marginBottom: 16, fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#444", display: "flex", gap: 20 }}>
+            <span>Event key: <span style={{ color: "#666" }}>{selectedEvent}</span></span>
+            <span>Match key: <span style={{ color: "#666" }}>{selectedMatch}</span></span>
           </div>
         )}
 
-        <button
-          onClick={handleLoad}
-          disabled={!selectedMatchData}
-          style={{
-            width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
-            background: selectedMatchData ? `linear-gradient(135deg, ${ACCENT_DARK}, ${ACCENT})` : "#1a1a1a",
-            color: selectedMatchData ? "#1a0a1a" : "#333",
-            fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono', monospace",
-            letterSpacing: 2, textTransform: "uppercase",
-            cursor: selectedMatchData ? "pointer" : "not-allowed",
-            boxShadow: selectedMatchData ? `0 0 24px ${ACCENT_GLOW}` : "none",
-          }}
-        >
+        <ChamferButton onClick={handleLoad} disabled={!selectedMatchData}>
           Load Teams into Calculator
-        </button>
-      </div>
+        </ChamferButton>
+      </ChamferBox>
     </div>
   );
 }
@@ -426,11 +586,9 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showLogs, setShowLogs] = useState(false);
-  const [eventFocused, setEventFocused] = useState(false);
 
   const updateRed = (i, v) => setRed(r => r.map((x, j) => j === i ? v : x));
   const updateBlue = (i, v) => setBlue(b => b.map((x, j) => j === i ? v : x));
-
   const canCompute = red.every(t => t.length >= 2) && blue.every(t => t.length >= 2);
 
   const compute = useCallback(async () => {
@@ -446,14 +604,24 @@ export default function App() {
     setLoading(false);
   }, [canCompute, loading, red, blue, event]);
 
-  function handleSimLoad({ red: r, blue: b, eventKey, matchKey }) {
+  function handleSimLoad({ red: r, blue: b, eventKey }) {
     setRed(r); setBlue(b); setEvent(eventKey);
     setResult(null); setError(null); setLogs([]);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  const labelStyle = {
+    fontSize: 11, letterSpacing: 2, color: ACCENT, textTransform: "uppercase",
+    fontFamily: "'DM Mono', monospace", display: "block", marginBottom: 8,
+  };
+
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0f", fontFamily: "'DM Sans', sans-serif", color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 20px 60px" }}>
+    <div style={{
+      minHeight: "100vh", background: "#0a0a0f",
+      fontFamily: "'DM Sans', sans-serif", color: "#fff",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      padding: "40px 20px 60px",
+    }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Bebas+Neue&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -466,103 +634,129 @@ export default function App() {
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: 40 }}>
         <div style={{ fontSize: 11, letterSpacing: 4, color: ACCENT, fontFamily: "'DM Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>Team 8626 · Cyber Sailors</div>
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(42px, 8vw, 72px)", letterSpacing: 3, margin: 0, lineHeight: 1, background: `linear-gradient(135deg, #fff 40%, ${ACCENT})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(42px, 8vw, 72px)", letterSpacing: 3, margin: 0, lineHeight: 1, color: "#fff" }}>
           AUTO WIN CALC
         </h1>
         <div style={{ fontSize: 13, color: "#555", marginTop: 8, letterSpacing: 1 }}>Auto period win probability · powered by Statbotics + TBA</div>
       </div>
 
       {/* Main card */}
-      <div style={{ width: "100%", maxWidth: 680, background: "rgba(255,255,255,0.03)", border: `2px solid ${ACCENT}88`, borderRadius: 20, padding: "32px 28px", backdropFilter: "blur(12px)", boxShadow: `0 24px 48px #0008` }}>
+      <div style={{ width: "100%", maxWidth: 680 }}>
+        <ChamferBox c={14} borderColor={ACCENT + "88"} borderWidth={2} bg="rgba(255,255,255,0.03)" style={{ width: "100%" }}>
 
-        {/* Event key */}
-        <div style={{ marginBottom: 28 }}>
-          <label style={{ fontSize: 11, letterSpacing: 2, color: ACCENT, textTransform: "uppercase", fontFamily: "'DM Mono', monospace", display: "block", marginBottom: 8 }}>
-            Event Key <span style={{ color: "#444" }}>(optional — e.g. 2026nebb)</span>
-          </label>
-          <input
-            type="text" value={event}
-            onChange={e => setEvent(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && compute()}
-            onFocus={() => setEventFocused(true)}
-            onBlur={() => setEventFocused(false)}
-            placeholder="leave blank for full season data"
-            style={inputStyle(eventFocused)}
-          />
-        </div>
-
-        {/* Alliance inputs */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          <div>
-            <div style={{ fontSize: 10, letterSpacing: 1, color: "#ff6b6b", textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 12, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-              <img src="/logo_red.png" style={{ width: 22, height: 18, objectFit: "contain" }} alt="" /> Red Alliance
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {red.map((v, i) => <TeamInput key={i} value={v} onChange={val => updateRed(i, val)} onEnter={compute} placeholder={`Team ${i + 1}`} color="red" />)}
-            </div>
+          {/* Event key */}
+          <div style={{ marginBottom: 28 }}>
+            <label style={labelStyle}>
+              Event Key <span style={{ color: "#444" }}>(optional — e.g. 2026nebb)</span>
+            </label>
+            <ChamferEventInput
+              value={event}
+              onChange={e => setEvent(e.target.value)}
+              onEnter={compute}
+              placeholder="leave blank for full season data"
+            />
           </div>
-          <div>
-            <div style={{ fontSize: 10, letterSpacing: 1, color: "#6b9fff", textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 12, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-              <img src="/logo_blue.png" style={{ width: 22, height: 18, objectFit: "contain" }} alt="" /> Blue Alliance
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {blue.map((v, i) => <TeamInput key={i} value={v} onChange={val => updateBlue(i, val)} onEnter={compute} placeholder={`Team ${i + 1}`} color="blue" />)}
-            </div>
-          </div>
-        </div>
 
-        {/* Button */}
-        <button onClick={compute} disabled={!canCompute || loading} style={{ marginTop: 28, width: "100%", padding: "14px 0", borderRadius: 10, border: "none", background: canCompute && !loading ? `linear-gradient(135deg, ${ACCENT_DARK}, ${ACCENT})` : "#1a1a1a", color: canCompute && !loading ? "#1a0a1a" : "#333", fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono', monospace", letterSpacing: 2, textTransform: "uppercase", cursor: canCompute && !loading ? "pointer" : "not-allowed", transition: "all 0.2s", boxShadow: canCompute && !loading ? `0 0 24px ${ACCENT_GLOW}` : "none" }}>
-          {loading ? "Computing..." : "Calculate Auto Win Prob"}
-        </button>
-
-        {/* Live logs */}
-        {loading && logs.length > 0 && (
-          <div style={{ marginTop: 16, background: "#0a0a0a", borderRadius: 8, padding: "12px 14px", fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#666", maxHeight: 120, overflowY: "auto" }}>
-            {logs.map((l, i) => <div key={i} style={{ color: i === logs.length - 1 ? ACCENT : "#555" }}>› {l}</div>)}
-          </div>
-        )}
-
-        {/* Error */}
-        {error && <div style={{ marginTop: 16, padding: "12px 16px", background: "#ff4d4d11", border: "1px solid #ff4d4d33", borderRadius: 8, color: "#ff8080", fontSize: 13, fontFamily: "'DM Mono', monospace" }}>{error}</div>}
-
-        {/* Result */}
-        {result && !loading && (
-          <div style={{ marginTop: 24 }}>
-            <div style={{ height: 1, background: "rgba(255,255,255,0.06)", marginBottom: 24 }} />
-            <div style={{ fontSize: 11, letterSpacing: 2, color: ACCENT, textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 16 }}>Auto Period Result</div>
-            <ProbBar pRed={result.pRed} pBlue={result.pBlue} />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 20 }}>
-              {[
-                { label: "Red Auto Win", pct: result.pRed, total: result.redTotal, color: "#ff4d4d", glow: "#ff4d4d33" },
-                { label: "Blue Auto Win", pct: result.pBlue, total: result.blueTotal, color: "#4d7fff", glow: "#4d7fff33" },
-              ].map(({ label, pct, total, color, glow }) => (
-                <div key={label} style={{ background: `${color}08`, border: `1px solid ${color}22`, borderRadius: 12, padding: "16px 20px", textAlign: "center" }}>
-                  <div style={{ fontSize: 10, color: "#666", fontFamily: "'DM Mono', monospace", letterSpacing: 0, marginBottom: 6, whiteSpace: "nowrap" }}>{label}</div>
-                  <div style={{ fontSize: 36, fontFamily: "'Bebas Neue', sans-serif", color, letterSpacing: 2, lineHeight: 1, textShadow: `0 0 24px ${glow}` }}>{(pct * 100).toFixed(1)}%</div>
-                  <div style={{ fontSize: 11, color: "#555", fontFamily: "'DM Mono', monospace", marginTop: 6 }}>EPA: {total.toFixed(2)} pts</div>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => setShowLogs(s => !s)} style={{ marginTop: 16, background: "none", border: "none", color: "#444", fontSize: 11, fontFamily: "'DM Mono', monospace", cursor: "pointer", letterSpacing: 1 }}>
-              {showLogs ? "▲ hide details" : "▼ show details"}
-            </button>
-            {showLogs && (
-              <div style={{ marginTop: 8, background: "#0a0a0a", borderRadius: 8, padding: "12px 14px", fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#555", maxHeight: 200, overflowY: "auto" }}>
-                {logs.map((l, i) => <div key={i}>› {l}</div>)}
+          {/* Alliance inputs */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            <div>
+              <div style={{ fontSize: 10, letterSpacing: 1, color: "#ff6b6b", textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ff4d4d" }} /> Red Alliance
               </div>
-            )}
+              {red.map((v, i) => <ChamferInput key={i} value={v} onChange={val => updateRed(i, val)} onEnter={compute} placeholder={`Team ${i + 1}`} color="red" />)}
+            </div>
+            <div>
+              <div style={{ fontSize: 10, letterSpacing: 1, color: "#6b9fff", textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#4d7fff" }} /> Blue Alliance
+              </div>
+              {blue.map((v, i) => <ChamferInput key={i} value={v} onChange={val => updateBlue(i, val)} onEnter={compute} placeholder={`Team ${i + 1}`} color="blue" />)}
+            </div>
           </div>
-        )}
+
+          <ChamferButton onClick={compute} disabled={!canCompute || loading}>
+            {loading ? "Computing..." : "Calculate Auto Win Prob"}
+          </ChamferButton>
+
+          {loading && logs.length > 0 && (
+            <div style={{
+              marginTop: 16, background: "#0a0a0a", padding: "12px 14px",
+              fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#666",
+              maxHeight: 120, overflowY: "auto", borderRadius: 6,
+              border: "1px solid #1a1a1a",
+            }}>
+              {logs.map((l, i) => <div key={i} style={{ color: i === logs.length - 1 ? ACCENT : "#555" }}>› {l}</div>)}
+            </div>
+          )}
+
+          {error && (
+            <div style={{
+              marginTop: 16, padding: "12px 16px",
+              background: "#ff4d4d11", border: "1px solid #ff4d4d33",
+              borderRadius: 8, color: "#ff8080", fontSize: 13,
+              fontFamily: "'DM Mono', monospace",
+            }}>
+              {error}
+            </div>
+          )}
+
+          {result && !loading && (
+            <div style={{ marginTop: 24 }}>
+              <div style={{ height: 1, background: "rgba(255,255,255,0.06)", marginBottom: 24 }} />
+              <div style={{ fontSize: 11, letterSpacing: 2, color: ACCENT, textTransform: "uppercase", fontFamily: "'DM Mono', monospace", marginBottom: 16 }}>Auto Period Result</div>
+              <ProbBar pRed={result.pRed} pBlue={result.pBlue} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 20 }}>
+                {[
+                  { label: "Red Auto Win", pct: result.pRed, total: result.redTotal, color: "#ff4d4d" },
+                  { label: "Blue Auto Win", pct: result.pBlue, total: result.blueTotal, color: "#4d7fff" },
+                ].map(({ label, pct, total, color }) => (
+                  <div key={label} style={{
+                    background: `${color}08`,
+                    border: `1px solid ${color}22`,
+                    borderRadius: 10,
+                    padding: "16px 20px",
+                    textAlign: "center",
+                  }}>
+                    <div style={{ fontSize: 10, color: "#666", fontFamily: "'DM Mono', monospace", marginBottom: 6, whiteSpace: "nowrap" }}>{label}</div>
+                    <div style={{ fontSize: 36, fontFamily: "'Bebas Neue', sans-serif", color, letterSpacing: 2, lineHeight: 1 }}>{(pct * 100).toFixed(1)}%</div>
+                    <div style={{ fontSize: 11, color: "#555", fontFamily: "'DM Mono', monospace", marginTop: 6 }}>EPA: {total.toFixed(2)} pts</div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowLogs(s => !s)}
+                style={{
+                  marginTop: 16, background: "none", border: "none",
+                  color: "#444", fontSize: 11, fontFamily: "'DM Mono', monospace",
+                  cursor: "pointer", letterSpacing: 1,
+                }}
+              >
+                {showLogs ? "▲ hide details" : "▼ show details"}
+              </button>
+              {showLogs && (
+                <div style={{
+                  marginTop: 8, background: "#0a0a0a", padding: "12px 14px",
+                  fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#555",
+                  maxHeight: 200, overflowY: "auto", borderRadius: 6,
+                  border: "1px solid #1a1a1a",
+                }}>
+                  {logs.map((l, i) => <div key={i}>› {l}</div>)}
+                </div>
+              )}
+            </div>
+          )}
+        </ChamferBox>
       </div>
 
-      {/* Match Simulator */}
       <MatchSimulator onLoad={handleSimLoad} />
 
-      <a href="https://www.team8626.com" target="_blank" rel="noopener noreferrer"
+      <a
+        href="https://www.team8626.com"
+        target="_blank"
+        rel="noopener noreferrer"
         style={{ marginTop: 32, fontSize: 11, color: "#2a2a2a", fontFamily: "'DM Mono', monospace", letterSpacing: 1, textDecoration: "none" }}
         onMouseEnter={e => e.target.style.color = ACCENT}
-        onMouseLeave={e => e.target.style.color = "#2a2a2a"}>
+        onMouseLeave={e => e.target.style.color = "#2a2a2a"}
+      >
         CYBER SAILORS · FRC 8626 · AUTO CALCULATOR
       </a>
     </div>
